@@ -1,0 +1,8 @@
+.git
+.gitignore
+docs
+logs
+*.o
+uds_server
+.env
+.env.*

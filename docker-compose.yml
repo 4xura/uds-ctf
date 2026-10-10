@@ -1,0 +1,32 @@
+version: '3.3'
+
+services:
+  udsctf:
+    build: .
+    image: udsctf:latest
+    container_name: udsctf-container
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    security_opt:
+      - seccomp=unconfined
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 256
+    tmpfs:
+      - /home/tester/work:rw,size=64m,uid=1000,gid=1000,mode=750
+    ports:
+      - "2222:22"  # SSH port
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      - UDS_RESET_INTERVAL=10800
+    volumes:
+      # optional: mount log directory
+      - ./logs:/var/log
+    networks:
+      - udsctf-network
+
+networks:
+  udsctf-network:
+    driver: bridge

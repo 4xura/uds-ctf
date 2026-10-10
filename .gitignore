@@ -1,0 +1,18 @@
+# Local build outputs
+*.o
+/uds_server
+
+# Runtime data
+/logs/
+.boot_window
+
+# Local configuration and editor files
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
