@@ -1,120 +1,135 @@
-# UDSCTF — Reversing UDS over CAN
+# UDSCTF Public Introduction
 
-A five-stage automotive CTF adapted by [Axura](https://4xura.com/) from [yichen115/UDSCTF](https://github.com/yichen115/UDSCTF). Reverse a simulated ECU, explore its diagnostic state machine, and recover flags over a virtual CAN bus using UDS and ISO-TP.
+UDSCTF is a five-stage automotive security CTF built around UDS, the diagnostic protocol used by testers to talk to ECUs. The target behaves like a small simulated vehicle controller: it receives diagnostic requests over a virtual CAN interface, keeps session and security state, and exposes different data only after the right protocol path is reached.
+
+The challenge is designed for players who are comfortable with reversing and scripting, but new to car hacking. The main work is not car trivia. It is protocol analysis, state-machine reasoning, and binary reversing.
+
+## Access
+
+Players connect to a shared SSH environment:
+
+```bash
+ssh tester@<host> -p <port>
+# password: tester
+```
+
+Inside the environment, the CAN interface and UDS service are already running:
+
+```text
+CAN interface: vcan0
+UDS request ID: 0x7E0
+UDS response ID: 0x7E8
+```
+
+Useful tools are available in the container:
+
+```text
+python3, vim, cansend, candump, cangen, isotpdump, isotpsend
+```
+
+Player scripts should be written under `/home/tester/work`. A readable backup binary is provided under `/home/tester/backups` as the intended reversing artifact.
+
+## Challenge Model
+
+The simulated ECU accepts UDS requests and returns UDS responses. Each flag is tied to a different diagnostic feature:
+
+- public DID reading
+- SecurityAccess seed-key exchange
+- diagnostic session switching
+- protected memory reading
+- reset-time state recovery
+
+The live service protects the real flags. The backup binary is meant for reversing and contains obvious fake testing placeholders instead of prize flags.
+
+The shared server periodically resets the UDS service every 3 hours. This prevents stale state from lasting forever while still giving enough time for normal solving.
+
+## Flag Format
+
+All real flags use:
+
+```text
+UDSCTF{...}
+```
+
+## Challenge 1: Public DID Read
+
+**Difficulty**: ★
+
+The first stage introduces the basic request/response model. A public diagnostic identifier can be read without authentication. The goal is to recognize the UDS service format, send a valid request, and decode the response correctly.
+
+This stage is mainly about getting comfortable with:
+
+- CAN IDs versus UDS payload bytes
+- `ReadDataByIdentifier`
+- single-frame versus multi-frame responses
+
+## Challenge 2: Level 1 SecurityAccess
+
+**Difficulty**: ★★
+
+The second stage introduces UDS `SecurityAccess`. The ECU provides a seed, and the tester must return the matching key before a protected diagnostic identifier becomes readable.
+
+This stage requires:
+
+- requesting a seed
+- reversing the level 1 key logic from the backup binary
+- sending the derived key in the correct byte order
+- reading the newly unlocked diagnostic data
+
+## Challenge 3: Level 3 SecurityAccess
+
+**Difficulty**: ★★★
+
+The third stage adds diagnostic session state. A stronger SecurityAccess level is not reachable from the default session, so the solve must first move the ECU into the correct diagnostic mode.
+
+This stage focuses on:
+
+- interpreting negative responses as state-machine feedback
+- switching diagnostic sessions
+- reversing a stronger seed-key algorithm
+- using the unlocked state to access a protected DID
+
+## Challenge 4: Level 5 SecurityAccess and Memory Read
+
+**Difficulty**: ★★★★
+
+The fourth stage combines the previous state chain with a memory-read service. After the required SecurityAccess level is unlocked, the ECU allows controlled reads from a mapped program image.
+
+This stage requires:
+
+- completing the higher-level seed-key chain
+- understanding the `ReadMemoryByAddress` request format
+- choosing addresses and sizes carefully
+- scripting a memory scan to recover the hidden data
+
+## Challenge 5: ECU Reset State Recovery
+
+**Difficulty**: ★★★★★
+
+The final stage uses `ECUReset`. A normal reset is not enough. The useful path depends on prior session state, SecurityAccess state, reset subfunction parsing, and a short post-reset window.
+
+This stage is intended as the capstone:
+
+- reverse the reset handler
+- identify the state required before reset
+- trigger the correct reset behavior
+- reconnect quickly after restart
+- recover the final diagnostic data before the window expires
+
+## Setup
+
+To run your own challenge instance, see the [setup guide](docs/setup.md) and [VPS deployment guide](docs/deployment.md). The default local SSH port is `2222`.
 
 ## Writeup and solution
 
-The complete walkthrough, protocol background, reverse-engineering analysis, and solutions for all five stages are in Axura's writeup:
-
-**[Car Hacking CTF: Reversing UDS over CAN](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/)**
+The complete solution is available in [Axura's writeup: Car Hacking CTF: Reversing UDS over CAN](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/).
 
 > The CTF challenge is not a firmware exploit against a real car, but a simulated automotive diagnostic environment.
 >
 > — [Axura's writeup](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/)
 
-For the player-facing challenge description, see [docs/challenge.md](docs/challenge.md). The source and [Dockerfile](docker/Dockerfile) contain challenge logic and published flags; use the supplied backup binary if you want to solve by reversing.
-
-## Quick start
-
-Use a Linux host with Docker, Bash, iptables, and kernel support for SocketCAN and virtual CAN. The deployment script needs root access to configure the container's outbound firewall rule.
-
-```bash
-git clone https://github.com/4xura/uds-ctf.git
-cd uds-ctf
-sudo modprobe can
-sudo modprobe can_raw
-sudo modprobe vcan
-sudo bash ./scripts/deploy.sh
-```
-
-Connect to the local challenge:
-
-```bash
-ssh tester@localhost -p 2222
-# password: tester
-```
-
-The container creates `vcan0` and starts the simulated ECU automatically. Write player scripts in `/home/tester/work`; that directory is a 64 MB temporary filesystem and is cleared when the container is recreated.
-
-| Setting | Value |
-| --- | --- |
-| SSH port | `2222` on the host |
-| Player credentials | `tester:tester` |
-| CAN interface | `vcan0` |
-| Tester → ECU CAN ID | `0x7E0` |
-| ECU → tester CAN ID | `0x7E8` |
-| Reversing artifact | `/home/tester/backups/uds_server_20260702.zip` |
-| Flag format | `UDSCTF{...}` |
-| Service reset interval | `10800` seconds (3 hours) |
-
-Available tools include `python3`, `vim`, `cansend`, `candump`, `cangen`, `isotpdump`, and `isotpsend`, plus the `python-can` and `can-isotp` libraries.
-
-For manual Docker deployment and VPS setup, see [docs/deployment.md](docs/deployment.md).
-
-## Challenge stages
-
-| Stage | Focus |
-| --- | --- |
-| 1. Public DID read | UDS requests and ISO-TP response handling |
-| 2. Level 1 SecurityAccess | Reversing a seed-key exchange |
-| 3. Programming session | Diagnostic session state and level 3 SecurityAccess |
-| 4. Protected memory read | Level 5 SecurityAccess and a mapped ELF image |
-| 5. Silent reset | ECU reset behavior and a short post-reset window |
-
-The readable backup binary uses `TEST{FAKE_FLAGS_IN_TESTING_...}` placeholders. The live service loads the `UDSCTF{...}` flags from `/opt/udsctf/flags.txt`, created during the Docker image build. For a new event, replace the five flag values in [docker/Dockerfile](docker/Dockerfile) before building.
-
-Players share one ECU state. `UDS_RESET_INTERVAL` controls the periodic service reset; set it in `docker-compose.yml` or pass it through `docker run` when deploying manually.
-
-## Build the binary
-
-For a Linux source build, install GCC and Make, then run:
-
-```bash
-make
-```
-
-This builds `build/uds_server`, with object files kept under `build/`. Run `make clean` to remove the generated files. The Docker build packages the binary into the read-only player backup and installs the live service separately.
-
-## Manage the container
-
-```bash
-sudo docker logs --tail=80 udsctf-container
-sudo docker restart udsctf-container
-sudo docker stop udsctf-container
-```
-
-If startup cannot create `vcan0`, check that the host supports virtual CAN and that the modules were loaded before deployment. The default SSH credentials are part of the challenge setup.
-
-## Repository layout
-
-```text
-uds-ctf/
-├── Makefile                 # Linux binary build
-├── docker-compose.yml       # Container configuration
-├── src/
-│   └── uds_server.c         # Simulated ECU and challenge state machine
-├── scripts/
-│   └── deploy.sh            # Build, launch, and outbound firewall setup
-├── docker/
-│   ├── Dockerfile           # Challenge image and player backup
-│   └── scripts/
-│       ├── start.sh         # CAN, service, SSH, and reset loop startup
-│       ├── cleanup.sh       # Runtime cleanup
-│       ├── setup_permissions.sh
-│       └── udsctf_jail.sh    # SSH session wrapper
-├── docs/
-│   ├── challenge.md         # Player introduction
-│   └── deployment.md        # VPS deployment guide
-└── third_party/
-    └── iso14229/
-        ├── iso14229.c       # Bundled UDS protocol implementation
-        ├── iso14229.h       # Protocol definitions
-        └── LICENSE          # Protocol library's MIT notice
-```
-
 ## Credits
 
-- **Original challenge:** [yichen115/UDSCTF](https://github.com/yichen115/UDSCTF), the basis for this adaptation.
-- **Adaptation and solution writeup:** [Axura — Car Hacking CTF: Reversing UDS over CAN](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/).
-- **UDS protocol library:** [driftregion/iso14229](https://github.com/driftregion/iso14229). Its MIT notice is preserved in [third_party/iso14229/LICENSE](third_party/iso14229/LICENSE).
-- **SSH session wrapper:** [google/nsjail](https://github.com/google/nsjail).
+This challenge was adapted by [Axura](https://4xura.com/) from the original [yichen115/UDSCTF](https://github.com/yichen115/UDSCTF).
+
+The bundled UDS protocol library comes from [driftregion/iso14229](https://github.com/driftregion/iso14229); its MIT notice is preserved in [third_party/iso14229/LICENSE](third_party/iso14229/LICENSE).
