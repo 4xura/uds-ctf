@@ -6,12 +6,11 @@ The challenge is designed for players who are comfortable with reversing and scr
 
 ## References
 
-- **Full solution writeup by Axura:** [Car Hacking CTF: Reversing UDS over CAN](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/).
-- **Original challenge by yichen115:** [yichen115/UDSCTF](https://github.com/yichen115/UDSCTF). This repository is Axura's adaptation of that project.
+- **Full solution writeup:** [Car Hacking CTF: Reversing UDS over CAN](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/).
+- **Original challenge by yichen115:** [yichen115/UDSCTF](https://github.com/yichen115/UDSCTF). 
 
 > The CTF challenge is not a firmware exploit against a real car, but a simulated automotive diagnostic environment.
 >
-> — [Axura's writeup](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/)
 
 ## Build and deployment
 
