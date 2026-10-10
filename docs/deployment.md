@@ -1,15 +1,60 @@
-# UDSCTF VPS Deployment
+# Build and deployment guide
 
-Minimal setup for an empty Ubuntu VPS.
+This guide is for challenge hosts. The [main README](../README.md) contains the player introduction, five challenge stages, solution writeup, and original-project credit.
 
-## Ports
+## Run locally
+
+Use a Linux host with Docker, Bash, iptables, and kernel support for SocketCAN and virtual CAN. Run the deployment script as root so it can configure the container's outbound firewall rule.
+
+```bash
+git clone https://github.com/4xura/uds-ctf.git
+cd uds-ctf
+sudo modprobe can
+sudo modprobe can_raw
+sudo modprobe vcan
+sudo bash ./scripts/deploy.sh
+```
+
+The script builds the image, starts the container, and applies the outbound firewall rule. It supports Docker Compose v2, legacy Compose, and direct Docker deployment.
+
+Connect as a player:
+
+```bash
+ssh tester@localhost -p 2222
+# password: tester
+```
+
+Player scripts belong in `/home/tester/work`, a 64 MB temporary filesystem that is cleared when the container is recreated.
+
+## Build the binary
+
+From the repository root on Linux, with GCC and Make installed:
+
+```bash
+make
+```
+
+The executable is written to `build/uds_server`, and object files stay under `build/`. Use `make clean` to remove the generated files. The Docker build creates the player backup ZIP automatically.
+
+## Configure an event
+
+- Replace the five published flag values in [docker/Dockerfile](../docker/Dockerfile) before building for a new event.
+- Set `UDS_RESET_INTERVAL` in [docker-compose.yml](../docker-compose.yml), or pass it through `docker run`. The default is `10800` seconds (3 hours).
+- Players share one ECU state. A service reset clears that state.
+- The readable backup binary contains `TEST{FAKE_FLAGS_IN_TESTING_...}` placeholders; the live service reads the event flags from `/opt/udsctf/flags.txt`.
+
+## Deploy on an Ubuntu VPS
+
+The following steps assume an empty Ubuntu VPS and a root SSH session.
+
+### Ports
 
 Open these TCP ports in the cloud firewall:
 
 - `22`: administrator SSH
 - `2222`: public CTF SSH
 
-## Server Setup
+### Server Setup
 
 SSH into the VPS as root:
 
@@ -66,7 +111,7 @@ iptables -C DOCKER-USER -s "$CID" -m conntrack --ctstate NEW -j DROP 2>/dev/null
   iptables -I DOCKER-USER 1 -s "$CID" -m conntrack --ctstate NEW -j DROP
 ```
 
-## Verification
+### Verification
 
 Check the container:
 
@@ -103,7 +148,7 @@ ls -ld /home/tester/backups # root-owned, read-only for tester
 command -v wget             # should print nothing
 ```
 
-## Reset
+### Reset
 
 The UDS service resets every 3 hours by default:
 
@@ -116,3 +161,7 @@ To manually reset the challenge state:
 ```bash
 docker restart udsctf-container
 ```
+
+## Third-party components
+
+The bundled UDS protocol implementation comes from [driftregion/iso14229](https://github.com/driftregion/iso14229), with its MIT notice preserved in [third_party/iso14229/LICENSE](../third_party/iso14229/LICENSE). The container's SSH session wrapper uses [google/nsjail](https://github.com/google/nsjail).

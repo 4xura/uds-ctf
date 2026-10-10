@@ -4,6 +4,19 @@ UDSCTF is a five-stage automotive security CTF built around UDS, the diagnostic 
 
 The challenge is designed for players who are comfortable with reversing and scripting, but new to car hacking. The main work is not car trivia. It is protocol analysis, state-machine reasoning, and binary reversing.
 
+## References
+
+- **Full solution writeup by Axura:** [Car Hacking CTF: Reversing UDS over CAN](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/).
+- **Original challenge by yichen115:** [yichen115/UDSCTF](https://github.com/yichen115/UDSCTF). This repository is Axura's adaptation of that project.
+
+> The CTF challenge is not a firmware exploit against a real car, but a simulated automotive diagnostic environment.
+>
+> — [Axura's writeup](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/)
+
+## Build and deployment
+
+The [deployment guide](docs/deployment.md) explains how to build the binary, run the challenge locally, configure an event, and host it on an Ubuntu VPS. Local deployment exposes SSH on port `2222`.
+
 ## Access
 
 Players connect to a shared SSH environment:
@@ -115,21 +128,3 @@ This stage is intended as the capstone:
 - trigger the correct reset behavior
 - reconnect quickly after restart
 - recover the final diagnostic data before the window expires
-
-## Setup
-
-To run your own challenge instance, see the [setup guide](docs/setup.md) and [VPS deployment guide](docs/deployment.md). The default local SSH port is `2222`.
-
-## Writeup and solution
-
-The complete solution is available in [Axura's writeup: Car Hacking CTF: Reversing UDS over CAN](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/).
-
-> The CTF challenge is not a firmware exploit against a real car, but a simulated automotive diagnostic environment.
->
-> — [Axura's writeup](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/)
-
-## Credits
-
-This challenge was adapted by [Axura](https://4xura.com/) from the original [yichen115/UDSCTF](https://github.com/yichen115/UDSCTF).
-
-The bundled UDS protocol library comes from [driftregion/iso14229](https://github.com/driftregion/iso14229); its MIT notice is preserved in [third_party/iso14229/LICENSE](third_party/iso14229/LICENSE).
