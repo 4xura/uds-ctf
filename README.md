@@ -12,7 +12,7 @@ The complete walkthrough, protocol background, reverse-engineering analysis, and
 >
 > — [Axura's writeup](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/)
 
-For the player-facing challenge description, see [docs/challenge.md](docs/challenge.md). The source and Dockerfile contain challenge logic and published flags; use the supplied backup binary if you want to solve by reversing.
+For the player-facing challenge description, see [docs/challenge.md](docs/challenge.md). The source and [Dockerfile](docker/Dockerfile) contain challenge logic and published flags; use the supplied backup binary if you want to solve by reversing.
 
 ## Quick start
 
@@ -24,7 +24,7 @@ cd uds-ctf
 sudo modprobe can
 sudo modprobe can_raw
 sudo modprobe vcan
-sudo bash ./deploy.sh
+sudo bash ./scripts/deploy.sh
 ```
 
 Connect to the local challenge:
@@ -61,7 +61,7 @@ For manual Docker deployment and VPS setup, see [docs/deployment.md](docs/deploy
 | 4. Protected memory read | Level 5 SecurityAccess and a mapped ELF image |
 | 5. Silent reset | ECU reset behavior and a short post-reset window |
 
-The readable backup binary uses `TEST{FAKE_FLAGS_IN_TESTING_...}` placeholders. The live service loads the `UDSCTF{...}` flags from `/opt/udsctf/flags.txt`, created during the Docker image build. For a new event, replace the five flag values in the Dockerfile before building.
+The readable backup binary uses `TEST{FAKE_FLAGS_IN_TESTING_...}` placeholders. The live service loads the `UDSCTF{...}` flags from `/opt/udsctf/flags.txt`, created during the Docker image build. For a new event, replace the five flag values in [docker/Dockerfile](docker/Dockerfile) before building.
 
 Players share one ECU state. `UDS_RESET_INTERVAL` controls the periodic service reset; set it in `docker-compose.yml` or pass it through `docker run` when deploying manually.
 
@@ -73,7 +73,7 @@ For a Linux source build, install GCC and Make, then run:
 make
 ```
 
-This builds `uds_server`. The Docker build packages the binary into the read-only player backup and installs the live service separately.
+This builds `build/uds_server`, with object files kept under `build/`. Run `make clean` to remove the generated files. The Docker build packages the binary into the read-only player backup and installs the live service separately.
 
 ## Manage the container
 
@@ -89,27 +89,32 @@ If startup cannot create `vcan0`, check that the host supports virtual CAN and t
 
 ```text
 uds-ctf/
-├── uds_server.c             # Simulated ECU and challenge state machine
-├── iso14229.c               # Bundled UDS protocol implementation
-├── iso14229.h               # Protocol definitions
 ├── Makefile                 # Linux binary build
-├── Dockerfile               # Challenge image and player backup
 ├── docker-compose.yml       # Container configuration
-├── deploy.sh                # Build, launch, and outbound firewall setup
-├── start.sh                 # CAN, service, SSH, and reset loop startup
-├── cleanup.sh               # Runtime cleanup
-├── setup_permissions.sh     # Player environment and file permissions
-├── udsctf_jail.sh            # SSH session wrapper
+├── src/
+│   └── uds_server.c         # Simulated ECU and challenge state machine
+├── scripts/
+│   └── deploy.sh            # Build, launch, and outbound firewall setup
+├── docker/
+│   ├── Dockerfile           # Challenge image and player backup
+│   └── scripts/
+│       ├── start.sh         # CAN, service, SSH, and reset loop startup
+│       ├── cleanup.sh       # Runtime cleanup
+│       ├── setup_permissions.sh
+│       └── udsctf_jail.sh    # SSH session wrapper
 ├── docs/
 │   ├── challenge.md         # Player introduction
 │   └── deployment.md        # VPS deployment guide
 └── third_party/
-    └── iso14229-LICENSE     # Bundled protocol library's MIT notice
+    └── iso14229/
+        ├── iso14229.c       # Bundled UDS protocol implementation
+        ├── iso14229.h       # Protocol definitions
+        └── LICENSE          # Protocol library's MIT notice
 ```
 
 ## Credits
 
 - **Original challenge:** [yichen115/UDSCTF](https://github.com/yichen115/UDSCTF), the basis for this adaptation.
 - **Adaptation and solution writeup:** [Axura — Car Hacking CTF: Reversing UDS over CAN](https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/).
-- **UDS protocol library:** [driftregion/iso14229](https://github.com/driftregion/iso14229). Its MIT notice is preserved in [third_party/iso14229-LICENSE](third_party/iso14229-LICENSE).
+- **UDS protocol library:** [driftregion/iso14229](https://github.com/driftregion/iso14229). Its MIT notice is preserved in [third_party/iso14229/LICENSE](third_party/iso14229/LICENSE).
 - **SSH session wrapper:** [google/nsjail](https://github.com/google/nsjail).

@@ -56,7 +56,9 @@ RUN mkdir -p /var/run/sshd && \
     echo "AllowUsers tester" >> /etc/ssh/sshd_config
 
 # Copy challenge files to a temporary build directory
-COPY *.c *.h Makefile /tmp/build/
+COPY Makefile /tmp/build/
+COPY src/ /tmp/build/src/
+COPY third_party/iso14229/ /tmp/build/third_party/iso14229/
 WORKDIR /tmp/build
 
 # Build nsjail from upstream source
@@ -71,7 +73,7 @@ RUN make clean && make
 
 # Place the live executable in a protected directory and create a readable backup artifact
 RUN mkdir -p /opt/udsctf /home/tester/backups && \
-    cp uds_server /opt/udsctf/ && \
+    cp build/uds_server /opt/udsctf/ && \
     printf '%s\n' \
         'UDSCTF{VINAXURA13370000}' \
         'UDSCTF{27_AXURA_X0r_C1C2}' \
@@ -83,26 +85,26 @@ RUN mkdir -p /opt/udsctf /home/tester/backups && \
     chown root:root /opt/udsctf/uds_server && \
     chown root:root /opt/udsctf/flags.txt && \
     chmod 600 /opt/udsctf/flags.txt && \
-    python3 -m zipfile -c /home/tester/backups/uds_server_20260702.zip uds_server && \
+    python3 -m zipfile -c /home/tester/backups/uds_server_20260702.zip build/uds_server && \
     chown -R root:root /home/tester/backups && \
     chmod 755 /home/tester/backups && \
     chmod 644 /home/tester/backups/uds_server_20260702.zip && \
     rm -rf /tmp/build
 
 # Create startup script
-COPY start.sh /usr/local/bin/start.sh
+COPY docker/scripts/start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
 # Create cleanup script
-COPY cleanup.sh /usr/local/bin/cleanup.sh
+COPY docker/scripts/cleanup.sh /usr/local/bin/cleanup.sh
 RUN chmod +x /usr/local/bin/cleanup.sh
 
 # Create permission setup script
-COPY setup_permissions.sh /usr/local/bin/setup_permissions.sh
+COPY docker/scripts/setup_permissions.sh /usr/local/bin/setup_permissions.sh
 RUN chmod +x /usr/local/bin/setup_permissions.sh
 
 # Create jailed SSH login wrapper
-COPY udsctf_jail.sh /usr/local/bin/udsctf_jail.sh
+COPY docker/scripts/udsctf_jail.sh /usr/local/bin/udsctf_jail.sh
 RUN chmod +x /usr/local/bin/udsctf_jail.sh && \
     echo "ForceCommand /usr/local/bin/udsctf_jail.sh" >> /etc/ssh/sshd_config && \
     echo "PermitTunnel no" >> /etc/ssh/sshd_config && \

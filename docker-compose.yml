@@ -1,8 +1,8 @@
-version: '3.3'
-
 services:
   udsctf:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
     image: udsctf:latest
     container_name: udsctf-container
     cap_add:

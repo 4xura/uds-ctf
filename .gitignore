@@ -1,6 +1,6 @@
 # Local build outputs
+/build/
 *.o
-/uds_server
 
 # Runtime data
 /logs/

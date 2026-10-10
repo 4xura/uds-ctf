@@ -3,6 +3,6 @@
 docs
 logs
 *.o
-uds_server
+build
 .env
 .env.*

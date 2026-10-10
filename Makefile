@@ -1,17 +1,24 @@
 CC=gcc
 CFLAGS=-Wall -O2 -fno-pie -no-pie -Wl,-Ttext=0x40000000
-OBJS=uds_server.o iso14229.o
+CPPFLAGS += -Ithird_party/iso14229
+BUILD_DIR=build
+OBJS=$(BUILD_DIR)/uds_server.o $(BUILD_DIR)/iso14229.o
 
-all: uds_server
+.PHONY: all clean
 
-uds_server: uds_server.o iso14229.o
-	$(CC) $(CFLAGS) -o uds_server uds_server.o iso14229.o
+all: $(BUILD_DIR)/uds_server
 
-uds_server.o: uds_server.c iso14229.h
-	$(CC) $(CFLAGS) -c uds_server.c
+$(BUILD_DIR)/uds_server: $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS)
 
-iso14229.o: iso14229.c iso14229.h
-	$(CC) $(CFLAGS) -c iso14229.c
+$(BUILD_DIR)/uds_server.o: src/uds_server.c third_party/iso14229/iso14229.h | $(BUILD_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/iso14229.o: third_party/iso14229/iso14229.c third_party/iso14229/iso14229.h | $(BUILD_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR):
+	mkdir -p $@
 
 clean:
-	rm -f *.o uds_server
+	rm -f $(OBJS) $(BUILD_DIR)/uds_server

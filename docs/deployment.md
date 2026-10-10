@@ -40,7 +40,7 @@ modprobe vcan
 Build and run:
 
 ```bash
-docker build -t udsctf:latest .
+docker build -f docker/Dockerfile -t udsctf:latest .
 
 docker rm -f udsctf-container 2>/dev/null || true
 docker run -d \

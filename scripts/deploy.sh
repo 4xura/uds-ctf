@@ -3,6 +3,10 @@
 
 set -e
 
+# Resolve the build context from this script, including when invoked elsewhere.
+REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$REPO_ROOT"
+
 echo "UDSCTF deployment script started..."
 echo "================================"
 
@@ -11,9 +15,14 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-if command -v docker-compose &> /dev/null; then
+if docker compose version &> /dev/null; then
+    echo "Docker Compose detected; deploying with docker compose"
+    COMPOSE=(docker compose)
+    DEPLOY_METHOD="compose"
+elif command -v docker-compose &> /dev/null; then
     echo "docker-compose detected; deploying with docker-compose"
-    DEPLOY_METHOD="docker-compose"
+    COMPOSE=(docker-compose)
+    DEPLOY_METHOD="compose"
 else
     echo "docker-compose not found; deploying directly with Docker"
     DEPLOY_METHOD="docker"
@@ -34,9 +43,9 @@ if ! docker info &> /dev/null; then
     exit 1
 fi
 
-if [ "$DEPLOY_METHOD" = "docker-compose" ]; then
-    echo "Building and starting the service with docker-compose..."
-    docker-compose up -d --build
+if [ "$DEPLOY_METHOD" = "compose" ]; then
+    echo "Building and starting the service with ${COMPOSE[*]}..."
+    "${COMPOSE[@]}" up -d --build
     block_container_egress
 
     echo "Deployment complete!"
@@ -46,12 +55,12 @@ if [ "$DEPLOY_METHOD" = "docker-compose" ]; then
     echo "   password: tester"
     echo ""
     echo "Management commands:"
-    echo "   View logs: docker-compose logs -f"
-    echo "   Stop service: docker-compose down"
-    echo "   Restart service: docker-compose restart"
+    echo "   View logs: ${COMPOSE[*]} logs -f"
+    echo "   Stop service: ${COMPOSE[*]} down"
+    echo "   Restart service: ${COMPOSE[*]} restart"
 else
     echo "Building Docker image..."
-    docker build -t udsctf:latest .
+    docker build -f docker/Dockerfile -t udsctf:latest .
 
     echo "Starting container directly with Docker..."
     docker stop udsctf-container 2>/dev/null || true
