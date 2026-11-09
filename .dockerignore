@@ -1,8 +1,6 @@
 .git
-.gitignore
-docs
-logs
-*.o
+__pycache__
+poc
+README.md
 build
-.env
-.env.*
+logs

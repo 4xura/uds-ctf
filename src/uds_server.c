@@ -88,8 +88,15 @@ void load_runtime_flags(const char *path) {
         }
 
         line[strcspn(line, "\r\n")] = '\0';
-        const char flag_prefix[7] = { 0x55, 0x44, 0x53, 0x43, 0x54, 0x46, 0x7b };
-        if (memcmp(line, flag_prefix, sizeof(flag_prefix)) != 0 || strlen(line) >= sizeof(flag_values[i])) {
+        const char flag_prefix[9] = { 0x44, 0x41, 0x45, 0x44, 0x41, 0x4c, 0x55, 0x53, 0x7b };
+        /* Keep already-issued flags usable if an existing private instance resets. */
+        const char legacy_prefix[7] = { 0x55, 0x44, 0x53, 0x43, 0x54, 0x46, 0x7b };
+        size_t flag_len = strlen(line);
+        int prefix_ok = (flag_len > sizeof(flag_prefix) &&
+                         memcmp(line, flag_prefix, sizeof(flag_prefix)) == 0) ||
+                        (flag_len > sizeof(legacy_prefix) &&
+                         memcmp(line, legacy_prefix, sizeof(legacy_prefix)) == 0);
+        if (!prefix_ok || flag_len >= sizeof(flag_values[i]) || line[flag_len - 1] != '}') {
             printf("[LOG] invalid runtime flag entry at index %d; keeping fallback\n", i);
             continue;
         }
@@ -1173,3 +1180,4 @@ int main() {
     close(s);
     return 0;
 }
+

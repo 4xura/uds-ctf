@@ -1,0 +1,63 @@
+name: UDSCTF
+author: axura
+category: Car Hacking
+type: ssh
+difficulty: 5
+description: |
+  Reverse a simulated vehicle ECU and work through five UDS-over-CAN challenges.
+  Start with a public diagnostic identifier, then investigate security-access keys,
+  diagnostic sessions, protected memory and reset-time state.
+
+  Connect over SSH as **tester**, with password **tester**. Keep this chamber page
+  open to authorize shared access from your signed-in account's current IP address.
+  Write scripts in `/home/tester/work`. The reversing binary is in
+  `/home/tester/backups/uds_server_20260702.zip` and contains testing placeholders.
+
+  The virtual CAN interface is `vcan0`; requests use `0x7E0` and responses `0x7E8`.
+  Python, python-can, can-isotp, vim and can-utils are available inside the lab.
+  Flags use `DAEDALUS{...}`. Each flag earns points separately; capture all five to pwn the chamber.
+
+  Shared players use the same ECU state and work directory. Subscribers may launch
+  an IP-locked private copy. The ECU resets every three hours.
+attribution: |
+  Adapted from 4xura/uds-ctf, based on yichen115/UDSCTF.
+  Includes the MIT-licensed driftregion/iso14229 implementation.
+tags: [uds, can, reversing, automotive]
+connection_info: ssh tester@{host} -p {port}
+reproduces:
+  source: https://github.com/4xura/uds-ctf
+  post: https://4xura.com/car-hacking/car-hacking-ctf-reversing-uds-over-can/
+resources:
+  ram: 512M
+  cpus: 1
+  pids: 256
+expose:
+  - service: udsctf
+    port: 22
+    protocol: ssh
+    label: SSH · tester / tester
+flag:
+  service: udsctf
+  prefix: DAEDALUS
+objectives:
+  - id: public-did
+    name: Public DID Read
+    value: 100
+    flag: {env: UDS_FLAG_PUBLIC, prefix: DAEDALUS}
+  - id: level-one
+    name: Level 1 SecurityAccess
+    value: 200
+    flag: {env: UDS_FLAG_LEVEL1, prefix: DAEDALUS}
+  - id: level-three
+    name: Level 3 SecurityAccess
+    value: 300
+    flag: {env: UDS_FLAG_LEVEL3, prefix: DAEDALUS}
+  - id: memory
+    name: Level 5 Memory Read
+    value: 400
+    flag: {env: UDS_FLAG_MEMORY, prefix: DAEDALUS}
+  - id: reset
+    name: Silent ECU Reset
+    value: 500
+    flag: {env: UDS_FLAG_RESET, prefix: DAEDALUS}
+healthcheck: poc/check.py

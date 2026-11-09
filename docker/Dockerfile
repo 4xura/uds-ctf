@@ -5,10 +5,6 @@ FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Shanghai
 
-# Use Aliyun package mirrors
-RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-    sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
-
 # Install required packages
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -28,12 +24,6 @@ RUN apt-get update && apt-get install -y \
     openssh-server \
     vim \
     && rm -rf /var/lib/apt/lists/*
-
-# Configure pip to use the Aliyun mirror
-RUN mkdir -p ~/.pip && \
-    echo "[global]" > ~/.pip/pip.conf && \
-    echo "index-url = https://mirrors.aliyun.com/pypi/simple/" >> ~/.pip/pip.conf && \
-    echo "trusted-host = mirrors.aliyun.com" >> ~/.pip/pip.conf
 
 # Install python-can libraries
 RUN pip3 install python-can can-isotp
@@ -74,13 +64,7 @@ RUN make clean && make
 # Place the live executable in a protected directory and create a readable backup artifact
 RUN mkdir -p /opt/udsctf /home/tester/backups && \
     cp build/uds_server /opt/udsctf/ && \
-    printf '%s\n' \
-        'UDSCTF{VINAXURA13370000}' \
-        'UDSCTF{27_AXURA_X0r_C1C2}' \
-        'UDSCTF{D1D_M0re_Dead6eef_4AXURA}' \
-        'UDSCTF{7he_F1n@l_Labyrinth_5ecret_H@s_been_ReC0ver!}' \
-        'UDSCTF{Re@dMem0ry_from_5had0w_under_Labyrinth}' \
-        > /opt/udsctf/flags.txt && \
+    : > /opt/udsctf/flags.txt && \
     chmod 700 /opt/udsctf/uds_server && \
     chown root:root /opt/udsctf/uds_server && \
     chown root:root /opt/udsctf/flags.txt && \
@@ -93,6 +77,8 @@ RUN mkdir -p /opt/udsctf /home/tester/backups && \
 
 # Create startup script
 COPY docker/scripts/start.sh /usr/local/bin/start.sh
+COPY docker/scripts/run.sh /usr/local/bin/run-challenge.sh
+RUN chmod 755 /usr/local/bin/run-challenge.sh && rm -f /etc/ssh/ssh_host_*
 RUN chmod +x /usr/local/bin/start.sh
 
 # Create cleanup script
@@ -139,3 +125,4 @@ EXPOSE 22
 
 # Startup script
 ENTRYPOINT ["/usr/local/bin/start.sh"]
+

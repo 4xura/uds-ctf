@@ -1,3 +1,7 @@
+> **Daedalus integration branch.** This branch backs up the deployed chamber adaptation.
+> See [the integration guide](docs/daedalus.md). For the original standalone setup,
+> use [main](https://github.com/4xura/uds-ctf/tree/main).
+
 # UDSCTF Public Introduction
 
 UDSCTF is a five-stage automotive security CTF built around UDS, the diagnostic protocol used by testers to talk to ECUs. The target behaves like a small simulated vehicle controller: it receives diagnostic requests over a virtual CAN interface, keeps session and security state, and exposes different data only after the right protocol path is reached.
@@ -60,7 +64,7 @@ The shared server periodically resets the UDS service every 3 hours. This preven
 All real flags use:
 
 ```text
-UDSCTF{...}
+DAEDALUS{...}
 ```
 
 ## Challenge 1: Public DID Read
@@ -127,3 +131,4 @@ This stage is intended as the capstone:
 - trigger the correct reset behavior
 - reconnect quickly after restart
 - recover the final diagnostic data before the window expires
+

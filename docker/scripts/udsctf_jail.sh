@@ -9,7 +9,7 @@ cd /home/tester/work
 
 run_nsjail() {
     exec /usr/local/bin/nsjail \
-        -Me \
+        -Mo \
         --quiet \
         --disable_clone_newnet \
         --disable_clone_newuser \
@@ -48,3 +48,4 @@ if [ -n "${SSH_ORIGINAL_COMMAND:-}" ]; then
 fi
 
 run_nsjail /bin/bash --rcfile /home/tester/.bashrc -i
+
