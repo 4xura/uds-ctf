@@ -90,12 +90,14 @@ COPY docker/scripts/setup_permissions.sh /usr/local/bin/setup_permissions.sh
 RUN chmod +x /usr/local/bin/setup_permissions.sh
 
 # Create jailed SSH login wrapper
-COPY docker/scripts/udsctf_jail.sh /usr/local/bin/udsctf_jail.sh
+COPY docker/scripts/jail.sh /usr/local/bin/udsctf_jail.sh
 RUN chmod +x /usr/local/bin/udsctf_jail.sh && \
     echo "ForceCommand /usr/local/bin/udsctf_jail.sh" >> /etc/ssh/sshd_config && \
     echo "PermitTunnel no" >> /etc/ssh/sshd_config && \
     echo "AllowTcpForwarding no" >> /etc/ssh/sshd_config && \
     echo "X11Forwarding no" >> /etc/ssh/sshd_config
+RUN printf '%s\n' 'session required pam_exec.so /usr/local/bin/cleanup.sh' \
+    >> /etc/pam.d/sshd
 
 # Set user permissions and login banner
 RUN chown root:root /home/tester && \

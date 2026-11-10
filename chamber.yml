@@ -10,15 +10,18 @@ description: |
 
   Connect over SSH as **tester**, with password **tester**. Keep this chamber page
   open to authorize shared access from your signed-in account's current IP address.
-  Write scripts in `/home/tester/work`. The reversing binary is in
+  Each SSH login gets a fresh directory under `/home/tester/work`. The reversing binary is in
   `/home/tester/backups/uds_server_20260702.zip` and contains testing placeholders.
 
   The virtual CAN interface is `vcan0`; requests use `0x7E0` and responses `0x7E8`.
   Python, python-can, can-isotp, vim and can-utils are available inside the lab.
   Flags use `DAEDALUS{...}`. Each flag earns points separately; capture all five to pwn the chamber.
 
-  Shared players use the same ECU state and work directory. Subscribers may launch
-  an IP-locked private copy. The ECU resets every three hours.
+  Players in the Lab instance share ECU state. Work left behind is cleared when
+  the last SSH session ends, and the ECU restarts for the next player. During
+  overlapping sessions, players still use the same `tester` account. Subscribers
+  may launch a private copy that only they can connect to. The Lab instance
+  resets every two hours; an extended private copy keeps its three-hour ECU reset.
 attribution: |
   Adapted from 4xura/uds-ctf, based on yichen115/UDSCTF.
   Includes the MIT-licensed driftregion/iso14229 implementation.
@@ -31,6 +34,7 @@ resources:
   ram: 512M
   cpus: 1
   pids: 256
+public_reset_hours: 2
 expose:
   - service: udsctf
     port: 22

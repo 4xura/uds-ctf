@@ -57,7 +57,7 @@ The simulated ECU accepts UDS requests and returns UDS responses. Each flag is t
 
 The live service protects the real flags. The backup binary is meant for reversing and contains obvious fake testing placeholders instead of prize flags.
 
-The shared server periodically resets the UDS service every 3 hours. This prevents stale state from lasting forever while still giving enough time for normal solving.
+The Daedalus Lab instance resets every 2 hours. The ECU's internal three-hour timer remains for an extended private copy. SSH sessions get fresh working directories, and abandoned work is cleared after the last player leaves.
 
 ## Flag Format
 

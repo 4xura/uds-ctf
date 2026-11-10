@@ -48,7 +48,7 @@ alias ll='ls -alF --color=auto'
 alias grep='grep --color=auto'
 
 PS1='\[\e[1;32m\]\u@\h\[\e[0m\]:\[\e[1;34m\]\w\[\e[0m\]\$ '
-cd /home/tester/work
+cd "${UDS_SESSION_DIR:-/home/tester/work}"
 
 if [[ $- == *i* ]] && [ -t 1 ] && [ -z "${UDSCTF_BANNER_SHOWN:-}" ]; then
     export UDSCTF_BANNER_SHOWN=1
@@ -72,3 +72,4 @@ chown root:root /home/tester/.bashrc
 chmod 644 /home/tester/.welcome /home/tester/.bashrc
 
 echo "Permission setup complete"
+

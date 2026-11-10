@@ -1,6 +1,7 @@
 #!/bin/bash
 set -eu
 /usr/local/bin/setup_permissions.sh
+/usr/local/bin/cleanup.sh startup
 mkdir -p /run/sshd
 ssh-keygen -A
 cd /opt/udsctf

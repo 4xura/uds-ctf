@@ -6,7 +6,7 @@ This branch preserves the UDSCTF adaptation deployed in Daedalus. Its base is
 Copy this branch's working tree, excluding `.git`, into
 `Daedalus/chambers/0x02-udsctf/`. The compose file points at `docker/Dockerfile`.
 The supporting Daedalus release includes SSH chambers and independently scored
-objectives (platform commit `32f0de8` or later).
+objectives (platform commit `9a414ef` or later).
 
 ## Adaptation
 
@@ -33,10 +33,20 @@ Daedalus validation and its chamber check for `0x02-udsctf`. The reference solve
 uses the ordinary `tester` account over SSH and recovers all five real flags
 through the virtual CAN interface. It does not read the protected flag file.
 
-The initial SSH login remains `tester` / `tester`, work files use a 64 MB tmpfs,
-and the ECU resets every three hours. Original standalone deployment instructions
+The initial SSH login remains `tester` / `tester`. Each login gets a fresh working
+directory inside the bounded 64 MB work tmpfs. The Lab instance resets every two
+hours; an extended private copy keeps the ECU's three-hour internal reset. Original standalone deployment instructions
 under `docs/deployment.md` describe `main`; they are not the platform's deployment
 procedure for this branch.
+
+## Shared SSH cleanup
+
+PAM runs `docker/scripts/cleanup.sh` under root when SSH sessions open and close.
+Each session uses a fresh working directory. When the final session ends, cleanup
+removes leftover files, ends detached tester processes, clears the boot marker,
+and restarts the ECU. Sessions that overlap keep working while another player
+leaves. They share the `tester` Unix account and can still inspect each other's
+active files; cleanup protects the next session from abandoned work.
 
 ## Source mapping
 

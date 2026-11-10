@@ -6,9 +6,12 @@ export USER=tester
 export LOGNAME=tester
 export PATH=/usr/local/bin:/usr/bin:/bin
 cd /home/tester/work
+session_dir=$(mktemp -d /home/tester/work/session.XXXXXXXX)
+chmod 700 "$session_dir"
+trap 'rm -rf -- "$session_dir"' EXIT
 
 run_nsjail() {
-    exec /usr/local/bin/nsjail \
+    /usr/local/bin/nsjail \
         -Mo \
         --quiet \
         --disable_clone_newnet \
@@ -18,13 +21,14 @@ run_nsjail() {
         --disable_clone_newipc \
         --disable_clone_newuts \
         --disable_clone_newcgroup \
-        --cwd /home/tester/work \
+        --cwd "$session_dir" \
         --env HOME=/home/tester \
         --env USER=tester \
         --env LOGNAME=tester \
         --env PATH=/usr/local/bin:/usr/bin:/bin \
         --env TERM=xterm-256color \
         --env UDSCTF_BANNER_SHOWN=1 \
+        --env "UDS_SESSION_DIR=$session_dir" \
         --rlimit_as 1024 \
         --rlimit_fsize 64 \
         --rlimit_nofile 256 \
@@ -36,9 +40,11 @@ if [ -n "${SSH_ORIGINAL_COMMAND:-}" ]; then
     case "$SSH_ORIGINAL_COMMAND" in
         /usr/lib/openssh/sftp-server|"/usr/lib/openssh/sftp-server"*)
             run_nsjail /usr/lib/openssh/sftp-server -R
+            exit $?
             ;;
         "scp -f /home/tester/backups/"*.zip|"scp -f backups/"*.zip|"scp -f ~/backups/"*.zip)
             run_nsjail /bin/sh -c "$SSH_ORIGINAL_COMMAND"
+            exit $?
             ;;
         *)
             echo "Interactive login only."

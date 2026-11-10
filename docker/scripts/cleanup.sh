@@ -1,28 +1,70 @@
 #!/bin/bash
-# Security cleanup script - remove source files and keep the intended backup artifact
+# PAM runs this as root when a tester SSH session opens and closes. The lock and
+# counter live outside the tester-writable work directory.
+set -euo pipefail
 
-echo "Running security cleanup..."
+state=/run/udsctf
+work=/home/tester/work
+umask 077
+mkdir -p "$state" "$work"
+chmod 700 "$state"
+exec 9>"$state/sessions.lock"
+flock -x 9
 
-echo "Removing accidental source/build files from player home..."
-find /home/tester -path /home/tester/backups -prune -o -name "*.c" -delete 2>/dev/null || true
-find /home/tester -path /home/tester/backups -prune -o -name "*.h" -delete 2>/dev/null || true
-find /home/tester -path /home/tester/backups -prune -o -name "Makefile" -delete 2>/dev/null || true
-find /home/tester -path /home/tester/backups -prune -o -name "*.o" -delete 2>/dev/null || true
+clear_work() {
+    find "$work" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+    rm -f /opt/udsctf/.boot_window
+}
 
-echo "Build tools are removed in the image build stage"
+restart_ecu() {
+    local old current attempt
+    old=$(pgrep -xo uds_server || true)
+    if [ -n "$old" ]; then
+        kill -TERM "$old" || true
+    fi
+    for attempt in {1..50}; do
+        current=$(pgrep -xo uds_server || true)
+        if [ -n "$current" ] && [ "$current" != "$old" ]; then
+            return 0
+        fi
+        sleep 0.2
+    done
+    echo 'UDS server did not restart after cleanup' >&2
+    return 1
+}
 
-echo "Setting UDS server permissions..."
-chmod 700 /opt/udsctf/uds_server 2>/dev/null || true
-chown root:root /opt/udsctf/uds_server 2>/dev/null || true
+if [ "${1:-}" = startup ]; then
+    printf '0\n' > "$state/active.count"
+    clear_work
+    exit 0
+fi
 
-echo "Setting tester home permissions..."
-chown root:root /home/tester 2>/dev/null || true
-chmod 755 /home/tester 2>/dev/null || true
-chown -R root:root /home/tester/backups 2>/dev/null || true
-chmod 755 /home/tester/backups 2>/dev/null || true
-chmod 644 /home/tester/backups/uds_server_*.zip 2>/dev/null || true
-mkdir -p /home/tester/work
-chown -R tester:tester /home/tester/work 2>/dev/null || true
-chmod 750 /home/tester/work 2>/dev/null || true
-
-echo "Security cleanup complete"
+if [ "${PAM_USER:-}" != tester ]; then
+    exit 0
+fi
+count=$(cat "$state/active.count")
+[[ "$count" =~ ^[0-9]+$ ]] || exit 1
+case "${PAM_TYPE:-}" in
+    open_session)
+        if [ "$count" -eq 0 ]; then
+            clear_work
+            restart_ecu
+        fi
+        printf '%s\n' "$((count + 1))" > "$state/active.count"
+        ;;
+    close_session)
+        if [ "$count" -le 0 ]; then
+            echo 'SSH session count underflow' >&2
+            exit 1
+        fi
+        count=$((count - 1))
+        printf '%s\n' "$count" > "$state/active.count"
+        if [ "$count" -eq 0 ]; then
+            # Background tools from previous SSH sessions must not keep working
+            # after everyone has left.
+            pkill -TERM -u tester || true
+            clear_work
+            restart_ecu
+        fi
+        ;;
+esac
