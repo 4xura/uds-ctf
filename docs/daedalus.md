@@ -32,6 +32,9 @@ Prepare the Docker host with the running kernel's SocketCAN modules (`vcan`,
 Daedalus validation and its chamber check for `0x02-udsctf`. The reference solver
 uses the ordinary `tester` account over SSH and recovers all five real flags
 through the virtual CAN interface. It does not read the protected flag file.
+The check disables SSH connection reuse for its probes: Daedalus uses a persistent
+SSH master for worker connections, and a reused transport would skip a fresh PAM
+login and the cleanup hook.
 
 The initial SSH login remains `tester` / `tester`. Each login gets a fresh working
 directory inside the bounded 64 MB work tmpfs. The Lab instance resets every two

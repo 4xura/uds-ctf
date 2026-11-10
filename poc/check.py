@@ -12,6 +12,9 @@ solver = Path(__file__).with_name("solve.py").read_text()
 command = "python3 - <<'DAEDALUS_SOLVER'\n" + solver + "\nDAEDALUS_SOLVER"
 ssh = ["sshpass", "-p", "tester", "ssh", "-tt", "-o", "StrictHostKeyChecking=no",
        "-o", "UserKnownHostsFile=/dev/null", "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=10",
+       # Daedalus uses SSH connection reuse for worker nodes. Every cleanup probe
+       # needs its own transport so PAM sees a new login and logout.
+       "-o", "ControlMaster=no", "-o", "ControlPath=none", "-o", "ControlPersist=no",
        "-p", os.environ["DAEDALUS_PORT"], "tester@" + os.environ["DAEDALUS_HOST"]]
 
 
