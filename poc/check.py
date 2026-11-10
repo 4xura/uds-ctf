@@ -3,7 +3,6 @@
 import argparse
 import os
 import subprocess
-import time
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
@@ -27,12 +26,8 @@ first = session('test "$PWD" = "$UDS_SESSION_DIR" && '
 if first.returncode:
     print(first.stdout + first.stderr)
     raise SystemExit("SSH did not create a private working directory")
-for attempt in range(5):
-    clean = session("test ! -e /home/tester/work/cleanup-probe")
-    if clean.returncode == 0:
-        break
-    time.sleep(2)
-else:
+clean = session("test ! -e /home/tester/work/cleanup-probe")
+if clean.returncode:
     print(clean.stdout + clean.stderr)
     raise SystemExit("Leftover work was visible to the next SSH session")
 

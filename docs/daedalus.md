@@ -44,8 +44,9 @@ procedure for this branch.
 PAM runs `docker/scripts/cleanup.sh` under root when SSH sessions open and close.
 Each session uses a fresh working directory. When the final session ends, cleanup
 removes leftover files, ends detached tester processes, clears the boot marker,
-and restarts the ECU. Sessions that overlap keep working while another player
-leaves. They share the `tester` Unix account and can still inspect each other's
+and restarts the ECU. A new login also clears abandoned files if the previous
+client has left but its PAM close hook has not finished. Sessions that overlap
+keep working while another player leaves. They share the `tester` Unix account and can still inspect each other's
 active files; cleanup protects the next session from abandoned work.
 
 ## Source mapping

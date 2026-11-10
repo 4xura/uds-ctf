@@ -46,7 +46,13 @@ count=$(cat "$state/active.count")
 [[ "$count" =~ ^[0-9]+$ ]] || exit 1
 case "${PAM_TYPE:-}" in
     open_session)
-        if [ "$count" -eq 0 ]; then
+        # A previous SSH client can receive its exit status before PAM closes
+        # that session. Its working directory is already gone, so a new login
+        # must not inherit files while the old PAM count is still settling.
+        active_workspace=$(find "$work" -mindepth 1 -maxdepth 1 -type d \
+            -name 'session.*' -print -quit)
+        if [ "$count" -eq 0 ] || [ -z "$active_workspace" ]; then
+            pkill -TERM -u tester || true
             clear_work
             restart_ecu
         fi
